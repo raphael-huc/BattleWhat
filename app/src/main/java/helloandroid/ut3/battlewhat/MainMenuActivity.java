@@ -15,13 +15,17 @@ public class MainMenuActivity extends AppCompatActivity {
     }
 
     public void startConnectHighscore(View view) {
-//        Intent intent = new Intent(this, exemple.class);
-//        startActivity(intent);
+        Intent intent = new Intent(this, HighscoreActivity.class);
+        startActivity(intent);
     }
 
     public void startConnectSettings(View view) {
+        Intent intent = new Intent(this, SettingsActivity.class);
+        startActivity(intent);
     }
 
     public void startGame(View view) {
+        Intent intent = new Intent(this, GameActivity.class);
+        startActivity(intent);
     }
 }
