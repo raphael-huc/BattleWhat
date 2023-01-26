@@ -1,8 +1,10 @@
-package helloandroid.ut3.battlewhat;
+package helloandroid.ut3.battlewhat.activity;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+
+import helloandroid.ut3.battlewhat.R;
 
 public class HighscoreActivity extends AppCompatActivity {
 
