@@ -4,21 +4,30 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
-    tools:context=".activity.GameActivity" >
+    android:background="@drawable/space_background"
+    android:backgroundTintMode="screen"
+    android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+    tools:context=".activity.GameActivity">
 
-    <ImageView
-        android:id="@+id/background"
-        android:layout_width="1047dp"
-        android:layout_height="1228dp"
+    <Chronometer
+        android:id="@+id/timer"
+        android:layout_width="173dp"
+        android:layout_height="75dp"
+        android:layout_centerHorizontal="true"
+        android:textSize="50sp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:srcCompat="@drawable/space_background"
-        tools:layout_editor_absoluteY="-73dp" />
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0"
+        tools:text="00:00" />
 
     <ImageView
         android:id="@+id/player"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:contentDescription="@string/player_sprite"
         android:rotation="180"
         android:rotationX="180"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -32,6 +41,7 @@
         android:id="@+id/enemy"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:contentDescription="@string/enemy_sprite"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.055"
