@@ -4,4 +4,8 @@
     <string name="settings">Settings</string>
     <string name="highscore">Highscore</string>
     <string name="menu">Menu</string>
+    <string name="pauseButton">Pause</string>
+    <string name="player_sprite">Player sprite</string>
+    <string name="enemy_sprite">Enemy sprite</string>
+    <string name="background_of_the_game">Background of the game</string>
 </resources>
