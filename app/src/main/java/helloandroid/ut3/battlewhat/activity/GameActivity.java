@@ -6,11 +6,13 @@ import android.os.Bundle;
 import android.widget.Chronometer;
 
 import helloandroid.ut3.battlewhat.R;
+import helloandroid.ut3.battlewhat.gameUtils.Score;
 
 public class GameActivity extends AppCompatActivity {
 
     private Chronometer timer;
     private boolean isRunning;
+    private Score score;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,6 +22,10 @@ public class GameActivity extends AppCompatActivity {
         isRunning = false;
         timer = (Chronometer) findViewById(R.id.timer);
         start();
+    }
+
+    public void incrementGameScore(int val) {
+        score.addPoint(val);
     }
 
     /**
