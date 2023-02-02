@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Chronometer;
+import android.widget.TextView;
 
 import helloandroid.ut3.battlewhat.R;
 import helloandroid.ut3.battlewhat.gameUtils.Score;
@@ -12,6 +13,7 @@ import helloandroid.ut3.battlewhat.gameUtils.Score;
 public class GameActivity extends AppCompatActivity {
 
     private Chronometer timer;
+    private TextView scoreInput;
     private boolean isRunning;
     private Score score;
 
@@ -19,14 +21,21 @@ public class GameActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
+        score = new Score();
 
         isRunning = false;
-        timer = (Chronometer) findViewById(R.id.timer);
+        timer = findViewById(R.id.timer);
+        scoreInput = findViewById(R.id.textScore);
         start();
     }
 
+    /**
+     * Add score the the player and refresh the TextView
+     * @param val : value to add to the score.
+     */
     public void incrementGameScore(int val) {
         score.addPoint(val);
+        scoreInput.setText(score.toString());
     }
 
     /**

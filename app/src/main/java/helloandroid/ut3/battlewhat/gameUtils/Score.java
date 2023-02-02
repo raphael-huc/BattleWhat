@@ -24,9 +24,10 @@ public class Score {
         int length = String.valueOf(scorePoint).length();
 
         int NB_DIGITS = 3;
-        for(int i = length; i < NB_DIGITS; i++) {
+        for (int i = length; i < NB_DIGITS; i++) {
             score.append("0");
         }
+        System.out.println(score);
         score.append(scorePoint);
         return score.toString();
     }
