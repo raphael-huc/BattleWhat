@@ -3,6 +3,7 @@ package helloandroid.ut3.battlewhat.activity;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Chronometer;
 
 import helloandroid.ut3.battlewhat.R;
@@ -46,5 +47,16 @@ public class GameActivity extends AppCompatActivity {
             timer.stop();
             isRunning = false;
         }
+    }
+
+    /**
+     * Exit screen of game
+     */
+    public void exitGame(View view) {
+        //Intent intent = new Intent(this, MainMenuActivity.class);
+        stop();
+        //enregistrer les valeurs
+        //startActivity(intent);
+        System.exit(RESULT_OK);
     }
 }
