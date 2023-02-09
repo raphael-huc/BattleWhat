@@ -8,5 +8,6 @@
     <string name="player_sprite">Player sprite</string>
     <string name="enemy_sprite">Enemy sprite</string>
     <string name="background_of_the_game">Background of the game</string>
-    <string name="score_init">00000</string>
+    <string name="button_exit">Exit</string>
+    <integer name="example_score">000000</integer>
 </resources>
