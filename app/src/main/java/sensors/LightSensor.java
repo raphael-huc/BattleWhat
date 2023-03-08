@@ -18,16 +18,22 @@ public class LightSensor implements SensorEventListener {
     //set instances for the sensorManager, light sensor, and textViews
     private SensorManager sensorManager;
     private Sensor lightSensor;
-    private SharedPreferences sharedPref;
-    private SharedPreferences.Editor editor;
     private Context context;
+    private OnLightListener lightListener;
+    private int  ligthLevel;
 
-    public LightSensor( Context context) {
+    public interface OnLightListener
+    {
+        public void onLightChange(int ligthLevel);
+    }
+
+    public LightSensor( Context context,OnLightListener lightListener) {
         this.context = context;
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
-        sharedPref = context.getSharedPreferences("sensors",Context.MODE_PRIVATE);
-        editor = sharedPref.edit();
+        ligthLevel=1;
+        this.lightListener=lightListener;
+        this.lightListener.onLightChange(ligthLevel);
         onStart();
     }
 
@@ -36,12 +42,34 @@ public class LightSensor implements SensorEventListener {
         if(sensorEvent.sensor.getType()== Sensor.TYPE_LIGHT) {
             //retrieve the current value of the light sensor
             float currentValue = sensorEvent.values[0];
-            //display the retrieved values onto the textView
-            editor.putFloat("lightSensor", currentValue);
-            editor.commit();
-            Log.i("LightSensorChange", sharedPref.getFloat
-                    ("lightSensor", Context.MODE_PRIVATE) + "");
+            int currentligthlevel=calculateLigthLevel(currentValue);
+            if(ligthLevel != currentligthlevel){
+                ligthLevel=currentligthlevel;
+                this.lightListener.onLightChange(ligthLevel);
+            }
+
         }
+    }
+    public int calculateLigthLevel(float sensorValue){
+        if(sensorValue<=1000){
+            return 1;
+        }
+        else if(sensorValue <= 2000){
+            return 2;
+        }
+        else if(sensorValue <= 3000){
+            return 3;
+        }
+        else if(sensorValue <= 4000){
+            return 4;
+        }
+        else if(sensorValue <= 5000){
+            return 6;
+        }
+        else if(sensorValue <= 6000){
+            return 7;
+        }
+        return 8;
     }
 
     @Override
