@@ -21,10 +21,6 @@ public class AcceleroMeterSensor implements SensorEventListener {
     private boolean isFirstValue;
     private float shakeThreshold = 3f;
 
-    public interface OnShakeListener
-    {
-        public void onShake();
-    }
 
     public AcceleroMeterSensor(Context context,OnShakeListener mShakeListener) {
         this.context = context;
