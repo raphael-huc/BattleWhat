@@ -19,21 +19,18 @@ public class LightSensor implements SensorEventListener {
     private SensorManager sensorManager;
     private Sensor lightSensor;
     private Context context;
-    private OnLightListener lightListener;
-    private int  ligthLevel;
+    private OnLightChangeListener lightListener;
+    private int  lightLevel;
 
-    public interface OnLightListener
-    {
-        public void onLightChange(int ligthLevel);
-    }
 
-    public LightSensor( Context context,OnLightListener lightListener) {
+
+    public LightSensor( Context context,OnLightChangeListener lightListener) {
         this.context = context;
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
-        ligthLevel=1;
+        lightLevel=1;
         this.lightListener=lightListener;
-        this.lightListener.onLightChange(ligthLevel);
+        this.lightListener.onLightChange(lightLevel);
         onStart();
     }
 
@@ -43,9 +40,9 @@ public class LightSensor implements SensorEventListener {
             //retrieve the current value of the light sensor
             float currentValue = sensorEvent.values[0];
             int currentligthlevel=calculateLigthLevel(currentValue);
-            if(ligthLevel != currentligthlevel){
-                ligthLevel=currentligthlevel;
-                this.lightListener.onLightChange(ligthLevel);
+            if(lightLevel != currentligthlevel){
+                lightLevel=currentligthlevel;
+                this.lightListener.onLightChange(lightLevel);
             }
 
         }

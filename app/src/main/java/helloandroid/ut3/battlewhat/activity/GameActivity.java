@@ -11,11 +11,16 @@ import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.Chronometer;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import helloandroid.ut3.battlewhat.R;
 import helloandroid.ut3.battlewhat.gameUtils.Score;
+import sensors.AcceleroMeterSensor;
+import sensors.LightSensor;
+import sensors.OnLightChangeListener;
+import sensors.OnShakeListener;
 
-public class GameActivity extends AppCompatActivity implements View.OnTouchListener {
+public class GameActivity extends AppCompatActivity implements View.OnTouchListener, OnShakeListener, OnLightChangeListener {
 
     private Chronometer timer;
     private TextView scoreInput;
@@ -35,6 +40,8 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private View player;
     private View enemy;
     private int gameContent_height;
+    private AcceleroMeterSensor acceleroMeterSensor;
+    private LightSensor lightSensor;
 
     private boolean mvtEnemy = true;
     private boolean mvtPlayer = false;
@@ -114,6 +121,9 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         start();
 
         gameContent.setOnTouchListener(this);
+        acceleroMeterSensor = new AcceleroMeterSensor(this,this);
+        lightSensor = new LightSensor(this,this);
+
     }
 
     /**
@@ -244,4 +254,14 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         player.setY(playerPosition);
     }
 
+    @Override
+    public void onShake() {
+        incrementGameScore(1);
+    }
+
+    @Override
+    public void onLightChange(int ligthLevel) {
+        Toast.makeText(this.getApplicationContext(),"Hello the ligth level changed "+ ligthLevel,
+                Toast.LENGTH_SHORT).show();
+    }
 }
