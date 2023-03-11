@@ -1,10 +1,13 @@
 package helloandroid.ut3.battlewhat.activity;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Rect;
 import android.os.Build;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
@@ -15,19 +18,41 @@ import android.widget.Chronometer;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+
 import helloandroid.ut3.battlewhat.R;
 import helloandroid.ut3.battlewhat.gameUtils.Score;
 import sensors.AcceleroMeterSensor;
 import sensors.LightSensor;
 import sensors.OnLightChangeListener;
 import sensors.OnShakeListener;
+import helloandroid.ut3.battlewhat.object.Explosion;
+import helloandroid.ut3.battlewhat.object.Shot;
+import helloandroid.ut3.battlewhat.object.spaceship.EnemySpaceShip;
+import helloandroid.ut3.battlewhat.object.spaceship.PlayerSpaceShip;
 
 public class GameActivity extends AppCompatActivity implements View.OnTouchListener, OnShakeListener, OnLightChangeListener {
 
+    // PARAMETERS FOR THE GAMEPLAY
+    private final int SHOOT_PLAYER_SPEED = 1000;
+    private final int SHOOT_ENEMY_SPEED = 1000;
+    private final int SHOOT_PLAYER_MOVE_SPEED = 10;
+    private final int SHOOT_ENEMY_MOVE_SPEED = 10;
+
+    private Handler handler;
+    private Context context;
+    public ConstraintLayout gameView;
     private Chronometer timer;
-    private TextView scoreInput;
-    private boolean isRunning;
+
     private Score score;
+    private TextView scoreInput;
+    private PlayerSpaceShip playerSpaceShip;
+    private EnemySpaceShip enemySpaceShip;
+    private ArrayList<Shot> enemyShots, playerShots;
+    private ArrayList<Explosion> explosions;
+
+    private boolean isRunning;
 
     //for position of player
     private int playerPosition;
@@ -35,12 +60,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     //for position of enemy
     private int enemyPosition;
 
-    private View gameContent;
-
     private Handler mHandler;
-
-    private View player;
-    private View enemy;
     private int gameContent_height;
     private AcceleroMeterSensor acceleroMeterSensor;
     private LightSensor lightSensor;
@@ -60,75 +80,57 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private boolean lightSensorIsOn;
     private boolean mouvementSensorIsOn;
 
-
-    /**
-     * un Runnable qui sera appelé par le timer pour la gestion du mouvement de l'enemy
-     */
-    private Runnable mUpdateEnemyPositionTime = new Runnable() {
-        public void run() {
-            mHandler.postDelayed(this, 20);
-            if (mvtEnemy){
-                enemyPosition+=vitesseEnemy;
-                if(enemyPosition >= gameContent_height - 110){
-                    mvtEnemy = !mvtEnemy;
-                }
-            }
-            if (!mvtEnemy) {
-                enemyPosition-=vitesseEnemy;
-                if (enemyPosition <= 0) {
-                    mvtEnemy = !mvtEnemy;
-                }
-            }
-            enemy.setY(enemyPosition);
-        }
-    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        context = this;
+        handler = new Handler();
+        playerShots = new ArrayList<>();
+        enemyShots = new ArrayList<>();
+        explosions = new ArrayList<>();
+
         setContentView(R.layout.activity_game);
+        gameView = findViewById(R.id.Game);
         score = new Score();
+        scoreInput = findViewById(R.id.textScore);
 
-        // remplacer tout le contenu de notre activité par le View
-        gameContent = findViewById(R.id.Game);
+        playerSpaceShip = new PlayerSpaceShip(context, findViewById(R.id.player));
+        enemySpaceShip = new EnemySpaceShip(context, findViewById(R.id.enemy));
+        timer = findViewById(R.id.timer);
 
+        // init the player shoot
+        handler.postDelayed(mPlayerBulletControl, SHOOT_PLAYER_SPEED);
+        handler.postDelayed(mEnemyBulletControl, SHOOT_ENEMY_SPEED);
 
-        //get size of layaout gameContent
-        ViewTreeObserver vto = gameContent.getViewTreeObserver();
+        //get size of layout gameView
+        ViewTreeObserver vto = gameView.getViewTreeObserver();
         vto.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
-                    gameContent.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+                    gameView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
                 } else {
-                    gameContent.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                    gameView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                 }
-                gameContent_height = gameContent.getMeasuredHeight();
+                gameContent_height = gameView.getMeasuredHeight();
             }
         });
 
-        //mHandler = new Handler();
-        //exécuter cette fonction au bout de time secondes
-        //mHandler.postDelayed(mUpdatePlayerPositionTime, 1000);
-
-        player = findViewById(R.id.player);
         playerPosition = gameContent_height;
-        player.setY(1667);
+        playerSpaceShip.setPositionY(1667);
+
+        enemyPosition= gameContent_height;
+        enemySpaceShip.setPositionY(1667);
 
         mHandler = new Handler();
-        //exécuter cette fonction au bout de time secondes
-        mHandler.postDelayed(mUpdateEnemyPositionTime, 1000);
-
-        enemy = findViewById(R.id.enemy);
-        enemyPosition= gameContent_height;
-        enemy.setY(1667);
+        mHandler.postDelayed(mUpdate, 20);
 
         isRunning = false;
-        timer = findViewById(R.id.timer);
-        scoreInput = findViewById(R.id.textScore);
+
+        // Start the game
         start();
 
-        gameContent.setOnTouchListener(this);
+        gameView.setOnTouchListener(this);
         this.sharedPref =this.getApplicationContext().
                 getSharedPreferences("switchSensor",
                         Context.MODE_PRIVATE);
@@ -141,6 +143,149 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             lightSensor = new LightSensor(this, this);
         }
     }
+
+    /**
+     * Méthode qui se lance toutes les 20 ms permetant de mettre à jour les éléments
+     */
+    private final Runnable mUpdate = new Runnable() {
+        @Override
+        public void run() {
+            updateEnemyPositionTime();
+            updatePostitionShoot();
+            checkCollisionShoot();
+            updateExplosion();
+
+            handler.postDelayed(this, 20);
+        }
+    };
+
+    private void updateExplosion() {
+        for(int i = 0; i < explosions.size(); i++) {
+            Explosion explosion = explosions.get(i);
+            if(explosion.changeBitmapUntilFinish(context)) {
+                explosions.remove(explosion);
+            }
+        }
+    }
+
+
+    private final Runnable mPlayerBulletControl = new Runnable() {
+        @Override
+        public void run() {
+            newPlayerBullet();
+            // Prepare the next shoot
+            handler.postDelayed(mPlayerBulletControl, SHOOT_PLAYER_SPEED);
+        }
+    };
+
+    private final Runnable mEnemyBulletControl = new Runnable() {
+        @Override
+        public void run() {
+            newEnemyBullet();
+            // Prepare the next shoot
+            handler.postDelayed(mEnemyBulletControl, SHOOT_ENEMY_SPEED);
+        }
+    };
+
+    public void newPlayerBullet() {
+        Shot shot = new Shot(context,
+                (int) (playerSpaceShip.getPositionX() - playerSpaceShip.getOurSpaceshipWidth()/2),
+                (int) playerSpaceShip.getPositionY() - playerSpaceShip.getOurSpaceshipHeight() / 4,
+                R.drawable.shoot_blue);
+        shot.getImageView().setScaleX(-1);
+        gameView.addView(shot.getImageView());
+        playerShots.add(shot);
+    }
+
+    public void newEnemyBullet() {
+        Shot shot = new Shot(context,
+                (int) enemySpaceShip.getPositionX(),
+                (int) enemySpaceShip.getPositionY() - enemySpaceShip.getHeight() / 4,
+                R.drawable.shoot_red);
+        gameView.addView(shot.getImageView());
+        enemyShots.add(shot);
+    }
+
+    public void updatePostitionShoot() {
+        for(Shot shot: playerShots) {
+            shot.setPositionX(shot.getPositionX() - SHOOT_PLAYER_MOVE_SPEED);
+        }
+        for(Shot shot: enemyShots) {
+            shot.setPositionX(shot.getPositionX() + SHOOT_ENEMY_MOVE_SPEED);
+        }
+    }
+
+//    /**
+//     * un Runnable qui sera appelé par le timer pour la gestion du mouvement du player
+//     */
+//    private void updatePlayerPositionTime() {
+//        // mettre à jour la position du joueur
+//        mHandler.postDelayed(this, 20);
+//        updatePosition(vitessePlayer);
+//    }
+
+    // TODO Adapter le code par rapport à l'écran
+    /**
+     * un Runnable qui sera appelé par le timer pour la gestion du mouvement de l'enemy
+     */
+    private void updateEnemyPositionTime() {
+            if (mvtEnemy){
+                enemyPosition+=1;
+                if(enemyPosition >= gameContent_height - 110){
+                    mvtEnemy = false;
+                }
+            }
+            if (!mvtEnemy) {
+                enemyPosition-=1;
+                if (enemyPosition <= 0) {
+                    mvtEnemy = true;
+                }
+            }
+            enemySpaceShip.setPositionY(enemyPosition);
+    }
+
+    private void checkCollisionShoot() {
+        // Check collision player shoot
+        playerShots.forEach(shoot -> {
+            if (Rect.intersects(shoot.getCollisionShape(),
+                    enemySpaceShip.getCollisionShape()) && !shoot.isHit) {
+                shoot.isHit = true;
+                gameView.removeView(shoot.getImageView());
+                incrementGameScore(1);
+                Explosion explosion = new Explosion(context, (int) enemySpaceShip.getPositionX(), (int) enemySpaceShip.getPositionY());
+                explosions.add(explosion);
+            }
+        });
+        enemyShots.forEach(shoot -> {
+            if (Rect.intersects(shoot.getCollisionShape(),
+                    playerSpaceShip.getCollisionShape()) && !shoot.isHit) {
+                shoot.isHit = true;
+                gameView.removeView(shoot.getImageView());
+                Explosion explosion = new Explosion(context, (int) enemySpaceShip.getPositionX(), (int) enemySpaceShip.getPositionY());
+                explosions.add(explosion);
+            }
+        });
+    }
+
+//
+//    /**
+//     * Méthode qui lance l'annimation d'explosion
+//     */
+//    private final Runnable mExplosion = new Runnable() {
+//        @Override
+//        public void run() {
+//            explosions = explosions.stream().map(explosion -> {
+//                explosion.getImageView()
+//                        .setImageBitmap(explosion.getExplosions()[explosion.getExplosionFrame()]);
+//                explosion.setExplosionFrame(explosion.getExplosionFrame() + 1);
+//                return explosion;
+//            }).filter(explosion -> explosion.getExplosionFrame() < 9).collect(Collectors.toList());
+//            if()
+//            handler.postDelayed(mExplosion, 60);
+//        }
+//    };
+
+
 
     /**
      * Add score the the player and refresh the TextView
@@ -268,7 +413,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
                 playerPosition-=vitessePlayer;
             }
         }
-        player.setY(playerPosition);
+        playerSpaceShip.setPositionY(playerPosition);
     }
 
     @Override

@@ -27,7 +27,6 @@ public class Score {
         for (int i = length; i < NB_DIGITS; i++) {
             score.append("0");
         }
-        System.out.println(score);
         score.append(scorePoint);
         return score.toString();
     }
