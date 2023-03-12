@@ -3,6 +3,8 @@ package helloandroid.ut3.battlewhat.activity;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -46,6 +48,11 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private LightSensor lightSensor;
 
     private boolean mvtEnemy = true;
+
+    private SharedPreferences sharedPref;
+    private SharedPreferences.Editor editor;
+    private boolean lightSensorIsOn;
+    private boolean mouvementSensorIsOn;
 
     /**
      * un Runnable qui sera appelé par le timer pour la gestion du mouvement du player
@@ -127,9 +134,17 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         start();
 
         gameContent.setOnTouchListener(this);
-        acceleroMeterSensor = new AcceleroMeterSensor(this,this);
-        lightSensor = new LightSensor(this,this);
-
+        this.sharedPref =this.getApplicationContext().
+                getSharedPreferences("switchSensor",
+                        Context.MODE_PRIVATE);
+        lightSensorIsOn=sharedPref.getBoolean("lightSensor",true);
+        mouvementSensorIsOn=sharedPref.getBoolean("mouvementSensor",true);
+        if(mouvementSensorIsOn) {
+            acceleroMeterSensor = new AcceleroMeterSensor(this,this);
+        }
+        if(lightSensorIsOn) {
+            lightSensor = new LightSensor(this, this);
+        }
     }
 
     /**
@@ -167,6 +182,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     public void exitGame(View view) {
         //Intent intent = new Intent(this, MainMenuActivity.class);
         stop();
+
         //enregistrer les valeurs
         //startActivity(intent);
         System.exit(RESULT_OK);
@@ -197,5 +213,53 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     public void onLightChange(int ligthLevel) {
         Toast.makeText(this.getApplicationContext(),"Hello the ligth level changed "+ ligthLevel,
                 Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if(acceleroMeterSensor!=null) {
+            acceleroMeterSensor.onStop();
+        }
+        if(lightSensor!=null){
+            lightSensor.onStop();
+        }
+
+    }
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if(acceleroMeterSensor!=null) {
+            acceleroMeterSensor.onStart();
+        }
+        if(lightSensor!=null){
+            lightSensor.onStart();
+        }
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if(acceleroMeterSensor!=null) {
+            acceleroMeterSensor.onResume();
+        }
+        if(lightSensor!=null){
+            lightSensor.onResume();
+        }
+
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(acceleroMeterSensor!=null) {
+            acceleroMeterSensor.onPause();
+        }
+        if(lightSensor!=null){
+            lightSensor.onPause();
+        }
     }
 }

@@ -8,6 +8,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.List;
 
@@ -31,7 +32,6 @@ public class LightSensor implements SensorEventListener {
         lightLevel=1;
         this.lightListener=lightListener;
         this.lightListener.onLightChange(lightLevel);
-        onStart();
     }
 
     @Override
@@ -42,7 +42,9 @@ public class LightSensor implements SensorEventListener {
             int currentligthlevel=calculateLigthLevel(currentValue);
             if(lightLevel != currentligthlevel){
                 lightLevel=currentligthlevel;
-                this.lightListener.onLightChange(lightLevel);
+                if(this.lightListener != null) {
+                    this.lightListener.onLightChange(lightLevel);
+                }
             }
 
         }
@@ -75,21 +77,25 @@ public class LightSensor implements SensorEventListener {
     }
 
     //register the listener once the activity starts
-    protected void onStart() {
+    public void onStart() {
         if(lightSensor != null) {
             sensorManager.registerListener(this, lightSensor, sensorManager.SENSOR_DELAY_FASTEST);
         }
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
     }
     //stop the sensor when the activity stops to reduce battery usage
-    protected void onStop() {
+    public void onStop() {
         sensorManager.unregisterListener(this);
     }
 
     //resume the sensor when the activity stops to reduce battery usage
-    protected void onResume() {
+    public void onResume() {
         sensorManager.registerListener(this, lightSensor,
                 SensorManager.SENSOR_DELAY_GAME);
+    }
+
+    public void onPause() {
+        sensorManager.unregisterListener(this);
     }
 
 }

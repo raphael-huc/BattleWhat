@@ -27,12 +27,10 @@ public class AcceleroMeterSensor implements SensorEventListener {
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         acceleroMeterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         this.mShakeListener = mShakeListener;
-        onStart();
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-
         x = event.values[0];
         y = event.values[1];
         z = event.values[2];
@@ -45,7 +43,9 @@ public class AcceleroMeterSensor implements SensorEventListener {
             if((deltaX > shakeThreshold && deltaY > shakeThreshold)
                     || (deltaX > shakeThreshold && deltaZ > shakeThreshold)
                     || (deltaY > shakeThreshold && deltaZ > shakeThreshold)) {
-                mShakeListener.onShake();
+                if(mShakeListener!=null) {
+                    mShakeListener.onShake();
+                }
             }
         }
         last_x = x;
@@ -60,23 +60,25 @@ public class AcceleroMeterSensor implements SensorEventListener {
     }
 
     //register the listener once the activity starts
-    protected void onStart() {
+    public void onStart() {
         if(acceleroMeterSensor != null) {
             sensorManager.registerListener(this, acceleroMeterSensor, sensorManager.SENSOR_DELAY_NORMAL);
         }
         acceleroMeterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-
     }
 
     //stop the sensor when the activity stops to reduce battery usage
-    protected void onStop() {
+    public void onStop() {
         sensorManager.unregisterListener(this);
     }
 
     //resume the sensor when the activity stops to reduce battery usage
-    protected void onResume() {
+    public void onResume() {
         sensorManager.registerListener(this, acceleroMeterSensor,
                 SensorManager.SENSOR_DELAY_NORMAL);
     }
 
+    public void onPause() {
+        sensorManager.unregisterListener(this);
+    }
 }
