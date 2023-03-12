@@ -8,6 +8,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.List;
 
@@ -18,17 +19,19 @@ public class LightSensor implements SensorEventListener {
     //set instances for the sensorManager, light sensor, and textViews
     private SensorManager sensorManager;
     private Sensor lightSensor;
-    private SharedPreferences sharedPref;
-    private SharedPreferences.Editor editor;
     private Context context;
+    private OnLightChangeListener lightListener;
+    private int  lightLevel;
 
-    public LightSensor( Context context) {
+
+
+    public LightSensor( Context context,OnLightChangeListener lightListener) {
         this.context = context;
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
-        sharedPref = context.getSharedPreferences("sensors",Context.MODE_PRIVATE);
-        editor = sharedPref.edit();
-        onStart();
+        lightLevel=1;
+        this.lightListener=lightListener;
+        this.lightListener.onLightChange(lightLevel);
     }
 
     @Override
@@ -36,12 +39,36 @@ public class LightSensor implements SensorEventListener {
         if(sensorEvent.sensor.getType()== Sensor.TYPE_LIGHT) {
             //retrieve the current value of the light sensor
             float currentValue = sensorEvent.values[0];
-            //display the retrieved values onto the textView
-            editor.putFloat("lightSensor", currentValue);
-            editor.commit();
-            Log.i("LightSensorChange", sharedPref.getFloat
-                    ("lightSensor", Context.MODE_PRIVATE) + "");
+            int currentligthlevel=calculateLigthLevel(currentValue);
+            if(lightLevel != currentligthlevel){
+                lightLevel=currentligthlevel;
+                if(this.lightListener != null) {
+                    this.lightListener.onLightChange(lightLevel);
+                }
+            }
+
         }
+    }
+    public int calculateLigthLevel(float sensorValue){
+        if(sensorValue<=1000){
+            return 1;
+        }
+        else if(sensorValue <= 2000){
+            return 2;
+        }
+        else if(sensorValue <= 3000){
+            return 3;
+        }
+        else if(sensorValue <= 4000){
+            return 4;
+        }
+        else if(sensorValue <= 5000){
+            return 6;
+        }
+        else if(sensorValue <= 6000){
+            return 7;
+        }
+        return 8;
     }
 
     @Override
@@ -50,21 +77,25 @@ public class LightSensor implements SensorEventListener {
     }
 
     //register the listener once the activity starts
-    protected void onStart() {
+    public void onStart() {
         if(lightSensor != null) {
             sensorManager.registerListener(this, lightSensor, sensorManager.SENSOR_DELAY_FASTEST);
         }
         lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
     }
     //stop the sensor when the activity stops to reduce battery usage
-    protected void onStop() {
+    public void onStop() {
         sensorManager.unregisterListener(this);
     }
 
     //resume the sensor when the activity stops to reduce battery usage
-    protected void onResume() {
+    public void onResume() {
         sensorManager.registerListener(this, lightSensor,
                 SensorManager.SENSOR_DELAY_GAME);
+    }
+
+    public void onPause() {
+        sensorManager.unregisterListener(this);
     }
 
 }

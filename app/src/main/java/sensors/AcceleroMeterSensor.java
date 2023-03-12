@@ -6,48 +6,52 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.MediaPlayer;
 import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class AcceleroMeterSensor implements SensorEventListener {
 
-    //set instances for the sensorManager, light sensor, and textViews
     private SensorManager sensorManager;
     private Sensor acceleroMeterSensor;
-    //private TextView acceleroMeterSensorText;
-    private SharedPreferences sharedPref;
-    private SharedPreferences.Editor editor;
+    private OnShakeListener mShakeListener;
     private final Context context;
+    private float x,y,z,last_x,last_y,last_z;
+    private boolean isFirstValue;
+    private float shakeThreshold = 3f;
 
-    public AcceleroMeterSensor(Context context) {
-       // this.acceleroMeterSensorText = acceleroMeterSensorText;
+
+    public AcceleroMeterSensor(Context context,OnShakeListener mShakeListener) {
         this.context = context;
         sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
         acceleroMeterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        sharedPref = context.getSharedPreferences("sensors",Context.MODE_PRIVATE);
-        editor = sharedPref.edit();
-        onStart();
+        this.mShakeListener = mShakeListener;
     }
 
     @Override
-    public void onSensorChanged(SensorEvent sensorEvent) {
-        if(sensorEvent.sensor.getType()== Sensor.TYPE_ACCELEROMETER) {
-
-            //get the current values of the accelerometer for each axis
-            float current_xValue = sensorEvent.values[0];
-            float current_yValue = sensorEvent.values[1];
-            float current_zValue = sensorEvent.values[2];
-
-            //display the retrieved values onto the textView
-            editor.putFloat("acceleroSensorX", current_xValue);
-            editor.putFloat("acceleroSensorY", current_yValue);
-            editor.putFloat("acceleroSensorZ", current_zValue);
-            editor.commit();
-            String s = "x: " + sharedPref.getFloat("acceleroSensorX", Context.MODE_PRIVATE) + " "
-                    + "y: " + sharedPref.getFloat("acceleroSensorY", Context.MODE_PRIVATE) + " "
-                    + "z: " + sharedPref.getFloat("acceleroSensorZ", Context.MODE_PRIVATE) + " ";
-            Log.i("AcceleroMeterSensorChange", s);
+    public void onSensorChanged(SensorEvent event) {
+        x = event.values[0];
+        y = event.values[1];
+        z = event.values[2];
+        if(isFirstValue) {
+            float deltaX = Math.abs(last_x - x);
+            float deltaY = Math.abs(last_y - y);
+            float deltaZ = Math.abs(last_z - z);
+            // If the values of acceleration have changed on at least two
+            //axes, then we assume that we are in a shake motion
+            if((deltaX > shakeThreshold && deltaY > shakeThreshold)
+                    || (deltaX > shakeThreshold && deltaZ > shakeThreshold)
+                    || (deltaY > shakeThreshold && deltaZ > shakeThreshold)) {
+                if(mShakeListener!=null) {
+                    mShakeListener.onShake();
+                }
+            }
         }
+        last_x = x;
+        last_y = y;
+        last_z = z;
+        isFirstValue = true;
     }
 
     @Override
@@ -56,22 +60,25 @@ public class AcceleroMeterSensor implements SensorEventListener {
     }
 
     //register the listener once the activity starts
-    protected void onStart() {
+    public void onStart() {
         if(acceleroMeterSensor != null) {
-            sensorManager.registerListener(this, acceleroMeterSensor, sensorManager.SENSOR_DELAY_FASTEST);
+            sensorManager.registerListener(this, acceleroMeterSensor, sensorManager.SENSOR_DELAY_NORMAL);
         }
-        acceleroMeterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
+        acceleroMeterSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
     }
 
     //stop the sensor when the activity stops to reduce battery usage
-    protected void onStop() {
+    public void onStop() {
         sensorManager.unregisterListener(this);
     }
 
     //resume the sensor when the activity stops to reduce battery usage
-    protected void onResume() {
+    public void onResume() {
         sensorManager.registerListener(this, acceleroMeterSensor,
-                SensorManager.SENSOR_DELAY_FASTEST);
+                SensorManager.SENSOR_DELAY_NORMAL);
     }
 
+    public void onPause() {
+        sensorManager.unregisterListener(this);
+    }
 }
