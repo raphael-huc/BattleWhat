@@ -16,6 +16,9 @@ public class Score {
     public void addPoint(int scorePoint) {
         this.scorePoint += scorePoint;
     }
+    public void removePoint(int scorePoint) { int newscore=this.scorePoint-scorePoint;
+        this.scorePoint=newscore<0? 0 : newscore;
+    }
 
     @NonNull
     @Override

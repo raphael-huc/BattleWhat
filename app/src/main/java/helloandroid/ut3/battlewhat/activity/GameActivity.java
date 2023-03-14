@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
 import android.os.Build;
-import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
@@ -15,11 +14,11 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.Chronometer;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.stream.Collectors;
 
 import helloandroid.ut3.battlewhat.R;
 import helloandroid.ut3.battlewhat.gameUtils.Score;
@@ -39,6 +38,10 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private final int SHOOT_ENEMY_SPEED = 1000;
     private final int SHOOT_PLAYER_MOVE_SPEED = 10;
     private final int SHOOT_ENEMY_MOVE_SPEED = 10;
+
+    private int lightLevel=1;
+    private int shakePoints=0;
+    TextView shakePointsView;
 
     private Handler handler;
     private Context context;
@@ -126,6 +129,8 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         mHandler.postDelayed(mUpdate, 20);
 
         isRunning = false;
+        shakePointsView = findViewById(R.id.shakePointsText);
+        shakePointsView.setVisibility(View.INVISIBLE);
 
         // Start the game
         start();
@@ -174,7 +179,9 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         public void run() {
             newPlayerBullet();
             // Prepare the next shoot
-            handler.postDelayed(mPlayerBulletControl, SHOOT_PLAYER_SPEED);
+            handler.postDelayed(mPlayerBulletControl, lightLevel==0 || lightLevel==2 ? (long)
+                    (SHOOT_PLAYER_SPEED * 0.7)
+                    : SHOOT_PLAYER_SPEED);
         }
     };
 
@@ -191,7 +198,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         Shot shot = new Shot(context,
                 (int) (playerSpaceShip.getPositionX() - playerSpaceShip.getOurSpaceshipWidth()/2),
                 (int) playerSpaceShip.getPositionY() - playerSpaceShip.getOurSpaceshipHeight() / 4,
-                R.drawable.shoot_blue);
+                 shakePoints >=40 ?R.drawable.shoot_god :R.drawable.shoot_blue);
         shot.getImageView().setScaleX(-1);
         gameView.addView(shot.getImageView());
         playerShots.add(shot);
@@ -207,6 +214,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     }
 
     public void updatePostitionShoot() {
+
         for(Shot shot: playerShots) {
             shot.setPositionX(shot.getPositionX() - SHOOT_PLAYER_MOVE_SPEED);
         }
@@ -251,7 +259,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
                     enemySpaceShip.getCollisionShape()) && !shoot.isHit) {
                 shoot.isHit = true;
                 gameView.removeView(shoot.getImageView());
-                incrementGameScore(1);
+                incrementGameScore(shakePoints>=40 ?2 : 1);
                 Explosion explosion = new Explosion(context, (int) enemySpaceShip.getPositionX(), (int) enemySpaceShip.getPositionY());
                 explosions.add(explosion);
             }
@@ -418,12 +426,40 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
 
     @Override
     public void onShake() {
-        incrementGameScore(1);
+        TextView shakePointsView = findViewById(R.id.shakePointsText);
+        if(shakePoints <40){
+            shakePoints++;
+
+            String shakeTemplateText = getResources().getString(R.string.shake_points);
+            shakePointsView.setText(this.shakePoints+shakeTemplateText);
+            shakePointsView.setVisibility(View.VISIBLE);
+        }
+        if(shakePoints==40){
+            shakePointsView.setVisibility(View.INVISIBLE);
+            ImageView v= findViewById(R.id.player);
+            v.setImageResource(R.drawable.godmode);
+            playerSpaceShip.putGodMode();
+        }
+
+
     }
 
     @Override
-    public void onLightChange(int ligthLevel) {
-        Toast.makeText(this.getApplicationContext(),"Hello the ligth level changed "+ ligthLevel,
+    public void onLightChange(int lightLevel) {
+        Toast.makeText(this.getApplicationContext(),"Hello the ligth level changed "+ lightLevel,
+                Toast.LENGTH_SHORT).show();
+        String message ="";
+        if(lightLevel==0){
+            message="Low illumination => +Frequency Shot";
+        }
+        if(lightLevel==1){
+            message="Normal illumination => Normal Frequency";
+        }
+        if(lightLevel==2){
+            message="Great illumination => +Frequency Shot";
+        }
+        this.lightLevel=lightLevel;
+        Toast.makeText(this.getApplicationContext(),message,
                 Toast.LENGTH_SHORT).show();
     }
 
