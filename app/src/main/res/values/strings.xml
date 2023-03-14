@@ -10,5 +10,7 @@
     <string name="background_of_the_game">Background of the game</string>
     <string name="button_exit">Exit</string>
     <integer name="example_score">000000</integer>
-    <string name="shake_points">/40 shakepoints</string>
+    <string name="shake_points">/40 ShakEvolPoints</string>
+    <string name="bonus_points">You dodge well\nExtra points\nif you shake the phone</string>
+
 </resources>
