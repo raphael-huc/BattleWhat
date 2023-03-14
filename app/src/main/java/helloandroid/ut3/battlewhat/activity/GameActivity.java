@@ -19,6 +19,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import helloandroid.ut3.battlewhat.R;
 import helloandroid.ut3.battlewhat.gameUtils.Score;
@@ -45,7 +48,8 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private int shakePoints=0;
     private TextView shakePointsView;
     private TextView bonusMessage;
-    private int time = 0;
+    private int counterTimeToGetBonus;
+    private Supplier<Integer> updateBonusTimerFunctional= ()-> {return -1;};
 
     private Handler handler;
     private Context context;
@@ -83,9 +87,6 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private static final int SWIPE_THRESHOLD = 100;
 
     private SharedPreferences sharedPref;
-    private SharedPreferences.Editor editor;
-    private boolean lightSensorIsOn;
-    private boolean mouvementSensorIsOn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -137,6 +138,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         shakePointsView.setVisibility(View.INVISIBLE);
         bonusMessage=findViewById(R.id.bonusMessage);
         bonusMessage.setVisibility(View.INVISIBLE);
+        counterTimeToGetBonus=0;
 
         // Start the game
         start();
@@ -145,12 +147,20 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         this.sharedPref =this.getApplicationContext().
                 getSharedPreferences("switchSensor",
                         Context.MODE_PRIVATE);
-        lightSensorIsOn=sharedPref.getBoolean("lightSensor",true);
-        mouvementSensorIsOn=sharedPref.getBoolean("mouvementSensor",true);
-        if(mouvementSensorIsOn) {
+        if(sharedPref.getBoolean("mouvementSensor",true)) {
             acceleroMeterSensor = new AcceleroMeterSensor(this,this);
+
+            updateBonusTimerFunctional = ()-> {
+                this.counterTimeToGetBonus += 20;
+                if (counterTimeToGetBonus >= TIME_NEEDED_FOR_BONUS) {
+                    String baseBonusMessage = getResources().getString(R.string.bonus_points);
+                    bonusMessage.setText(baseBonusMessage + "\n" + (this.counterTimeToGetBonus / 1000));
+                    bonusMessage.setVisibility(View.VISIBLE);
+                }
+                return 1;
+            };
         }
-        if(lightSensorIsOn) {
+        if(sharedPref.getBoolean("lightSensor",true)) {
             lightSensor = new LightSensor(this, this);
         }
     }
@@ -165,7 +175,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             updatePostitionShoot();
             checkCollisionShoot();
             updateExplosion();
-            checkIfPlayerDontGetAShoot();
+            updateBonusTimerFunctional.get();
             handler.postDelayed(this, 20);
         }
     };
@@ -176,14 +186,6 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             if(explosion.changeBitmapUntilFinish(context)) {
                 explosions.remove(explosion);
             }
-        }
-    }
-    private void checkIfPlayerDontGetAShoot(){
-        time+=20;
-        if(time>=TIME_NEEDED_FOR_BONUS){
-            String baseBonusMessage= getResources().getString(R.string.bonus_points);
-            bonusMessage.setText(baseBonusMessage+"\n"+(time/1000));
-            bonusMessage.setVisibility(View.VISIBLE);
         }
     }
 
@@ -282,7 +284,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             if (Rect.intersects(shoot.getCollisionShape(),
                     playerSpaceShip.getCollisionShape()) && !shoot.isHit) {
                 shoot.isHit = true;
-                time=0;
+                counterTimeToGetBonus =0;
                 bonusMessage.setVisibility(View.INVISIBLE);
                 gameView.removeView(shoot.getImageView());
                 Explosion explosion = new Explosion(context, (int) enemySpaceShip.getPositionX(), (int) enemySpaceShip.getPositionY());
@@ -442,10 +444,10 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
 
     @Override
     public void onShake() {
-        TextView shakePointsView = findViewById(R.id.shakePointsText);
-        if(time>TIME_NEEDED_FOR_BONUS){
-            incrementGameScore((time/1000));
-            time=0;
+
+        if(counterTimeToGetBonus >TIME_NEEDED_FOR_BONUS){
+            incrementGameScore((counterTimeToGetBonus /1000));
+            counterTimeToGetBonus =0;
             bonusMessage.setVisibility(View.INVISIBLE);
         }
         if(shakePoints < 40){
@@ -455,10 +457,12 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             shakePointsView.setVisibility(View.VISIBLE);
         }
         if(shakePoints==40){
+            TextView shakePointsView = findViewById(R.id.shakePointsText);
             shakePointsView.setVisibility(View.INVISIBLE);
             ImageView v= findViewById(R.id.player);
             v.setImageResource(R.drawable.godmode);
             playerSpaceShip.putGodMode();
+            shakePoints=41;
         }
 
 
