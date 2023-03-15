@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.view.View;
+import android.widget.ImageView;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -16,12 +17,12 @@ import helloandroid.ut3.battlewhat.object.Shot;
 public class PlayerSpaceShip {
     Context context;
     Bitmap spaceship;
-    View spaceShipView;
+    ImageView spaceShipView;
     Random random;
 
     public ArrayList<Shot> playerShots;
 
-    public PlayerSpaceShip(Context context, View spaceShipView) {
+    public PlayerSpaceShip(Context context, ImageView spaceShipView) {
         this.context = context;
         this.spaceShipView = spaceShipView;
         spaceship = BitmapFactory.decodeResource(context.getResources(), R.drawable.player);
@@ -37,6 +38,10 @@ public class PlayerSpaceShip {
 
     public void setPositionX(float x) {
         this.spaceShipView.setX(x);
+    }
+
+    public void putGodMode() {
+        spaceship = BitmapFactory.decodeResource(context.getResources(), R.drawable.enemy1);
     }
 
     public void setPositionY(float y) {

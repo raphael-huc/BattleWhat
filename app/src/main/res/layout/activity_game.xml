@@ -53,6 +53,7 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintVertical_bias="0.521" />
+
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <androidx.constraintlayout.widget.ConstraintLayout
@@ -87,6 +88,34 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintVertical_bias="0.41000003"
                 app:srcCompat="@drawable/enemy1" />
+
+            <TextView
+                android:id="@+id/shakePointsText"
+                android:layout_width="170dp"
+                android:layout_height="wrap_content"
+                android:text="0/40 ShakEvolPoints"
+                android:textColor="@color/yellow"
+                app:fontFamily="sans-serif-medium"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.171"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_bias="0.024" />
+
+            <TextView
+                android:id="@+id/bonusMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="100dp"
+                android:text="@string/bonus_points"
+                android:textColor="@color/yellow_orange"
+                app:fontFamily="sans-serif-medium"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.498"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_bias="0.72" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </LinearLayout>

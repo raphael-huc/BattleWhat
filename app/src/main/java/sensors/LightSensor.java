@@ -39,9 +39,9 @@ public class LightSensor implements SensorEventListener {
         if(sensorEvent.sensor.getType()== Sensor.TYPE_LIGHT) {
             //retrieve the current value of the light sensor
             float currentValue = sensorEvent.values[0];
-            int currentligthlevel=calculateLigthLevel(currentValue);
-            if(lightLevel != currentligthlevel){
-                lightLevel=currentligthlevel;
+            int currentlightlevel=calculateLightLevel(currentValue);
+            if(lightLevel != currentlightlevel){
+                lightLevel=currentlightlevel;
                 if(this.lightListener != null) {
                     this.lightListener.onLightChange(lightLevel);
                 }
@@ -49,26 +49,15 @@ public class LightSensor implements SensorEventListener {
 
         }
     }
-    public int calculateLigthLevel(float sensorValue){
-        if(sensorValue<=1000){
-            return 1;
+    public int calculateLightLevel(float sensorValue){
+        if(sensorValue<=50){
+            return 0;
         }
-        else if(sensorValue <= 2000){
+        else if(sensorValue>7000){
             return 2;
         }
-        else if(sensorValue <= 3000){
-            return 3;
-        }
-        else if(sensorValue <= 4000){
-            return 4;
-        }
-        else if(sensorValue <= 5000){
-            return 6;
-        }
-        else if(sensorValue <= 6000){
-            return 7;
-        }
-        return 8;
+
+        return 1;
     }
 
     @Override
