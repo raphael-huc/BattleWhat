@@ -201,6 +201,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
                 ExplosionAnimation explosionAnimation = new ExplosionAnimation(context);
                 explosions.add(explosionAnimation);
                 explosionAnimation.makeAnimation(context, gameView, playerSpaceShip);
+                playerSpaceShip.makeAnimationHit();
             }
         });
     }
@@ -208,7 +209,6 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private void updateExplosion() {
         for(int i = 0; i < explosions.size(); i++) {
             if(explosions.get(i).isFinish()) {
-                System.out.println("Here !");
                 gameView.removeView(explosions.get(i).getExplosionImageView());
                 explosions.remove(explosions.get(i));
             }
@@ -217,7 +217,10 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private final Runnable mPlayerBulletControl = new Runnable() {
         @Override
         public void run() {
-            newPlayerBullet();
+            // If player hit, it can't shoot
+            if(!playerSpaceShip.isHit()) {
+                newPlayerBullet();
+            }
             // Prepare the next shoot
             handler.postDelayed(mPlayerBulletControl, lightLevel==0 || lightLevel==2 ? (long)
                     (SHOOT_PLAYER_SPEED * 0.7)
@@ -276,15 +279,6 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             }
         }
     }
-
-//    /**
-//     * un Runnable qui sera appelé par le timer pour la gestion du mouvement du player
-//     */
-//    private void updatePlayerPositionTime() {
-//        // mettre à jour la position du joueur
-//        mHandler.postDelayed(this, 20);
-//        updatePosition(vitessePlayer);
-//    }
 
     // TODO Adapter le code par rapport à l'écran
     /**
