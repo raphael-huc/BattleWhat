@@ -20,17 +20,15 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import helloandroid.ut3.battlewhat.R;
 import helloandroid.ut3.battlewhat.gameUtils.Score;
+import helloandroid.ut3.battlewhat.object.ExplosionAnimation;
 import sensors.AcceleroMeterSensor;
 import sensors.LightSensor;
 import sensors.OnLightChangeListener;
 import sensors.OnShakeListener;
-import helloandroid.ut3.battlewhat.object.Explosion;
 import helloandroid.ut3.battlewhat.object.Shot;
 import helloandroid.ut3.battlewhat.object.spaceship.EnemySpaceShip;
 import helloandroid.ut3.battlewhat.object.spaceship.PlayerSpaceShip;
@@ -63,7 +61,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private PlayerSpaceShip playerSpaceShip;
     private EnemySpaceShip enemySpaceShip;
     private ArrayList<Shot> enemyShots, playerShots;
-    private ArrayList<Explosion> explosions;
+    private ArrayList<ExplosionAnimation> explosions;
 
     private boolean isRunning;
 
@@ -180,16 +178,42 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         }
     };
 
+    private void checkCollisionShoot() {
+        // Check collision player shoot
+        playerShots.forEach(shoot -> {
+            if (Rect.intersects(shoot.getCollisionShape(),
+                    enemySpaceShip.getCollisionShape()) && !shoot.isHit) {
+                shoot.isHit = true;
+                gameView.removeView(shoot.getImageView());
+                incrementGameScore(shakePoints>=40 ?2 : 1);
+                ExplosionAnimation explosionAnimation = new ExplosionAnimation(context);
+                explosions.add(explosionAnimation);
+                explosionAnimation.makeAnimation(context, gameView, enemySpaceShip);
+            }
+        });
+        enemyShots.forEach(shoot -> {
+            if (Rect.intersects(shoot.getCollisionShape(),
+                    playerSpaceShip.getCollisionShape()) && !shoot.isHit) {
+                shoot.isHit = true;
+                counterTimeToGetBonus =0;
+                bonusMessage.setVisibility(View.INVISIBLE);
+                gameView.removeView(shoot.getImageView());
+                ExplosionAnimation explosionAnimation = new ExplosionAnimation(context);
+                explosions.add(explosionAnimation);
+                explosionAnimation.makeAnimation(context, gameView, playerSpaceShip);
+            }
+        });
+    }
+
     private void updateExplosion() {
         for(int i = 0; i < explosions.size(); i++) {
-            Explosion explosion = explosions.get(i);
-            if(explosion.changeBitmapUntilFinish(context)) {
-                explosions.remove(explosion);
+            if(explosions.get(i).isFinish()) {
+                System.out.println("Here !");
+                gameView.removeView(explosions.get(i).getExplosionImageView());
+                explosions.remove(explosions.get(i));
             }
         }
     }
-
-
     private final Runnable mPlayerBulletControl = new Runnable() {
         @Override
         public void run() {
@@ -212,8 +236,8 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
 
     public void newPlayerBullet() {
         Shot shot = new Shot(context,
-                (int) (playerSpaceShip.getPositionX() - playerSpaceShip.getOurSpaceshipWidth()/2),
-                (int) playerSpaceShip.getPositionY() - playerSpaceShip.getOurSpaceshipHeight() / 4,
+                (int) (playerSpaceShip.getPositionX() - playerSpaceShip.getWidth()/2),
+                (int) playerSpaceShip.getPositionY() - playerSpaceShip.getHeight() / 4,
                  shakePoints >=40 ?R.drawable.shoot_god :R.drawable.shoot_blue);
         shot.getImageView().setScaleX(-1);
         gameView.addView(shot.getImageView());
@@ -281,51 +305,6 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             }
             enemySpaceShip.setPositionY(enemyPosition);
     }
-
-    private void checkCollisionShoot() {
-        // Check collision player shoot
-        playerShots.forEach(shoot -> {
-            if (Rect.intersects(shoot.getCollisionShape(),
-                    enemySpaceShip.getCollisionShape()) && !shoot.isHit) {
-                shoot.isHit = true;
-                gameView.removeView(shoot.getImageView());
-                incrementGameScore(shakePoints>=40 ?2 : 1);
-                Explosion explosion = new Explosion(context, (int) enemySpaceShip.getPositionX(), (int) enemySpaceShip.getPositionY());
-                explosions.add(explosion);
-            }
-        });
-        enemyShots.forEach(shoot -> {
-            if (Rect.intersects(shoot.getCollisionShape(),
-                    playerSpaceShip.getCollisionShape()) && !shoot.isHit) {
-                shoot.isHit = true;
-                counterTimeToGetBonus =0;
-                bonusMessage.setVisibility(View.INVISIBLE);
-                gameView.removeView(shoot.getImageView());
-                Explosion explosion = new Explosion(context, (int) enemySpaceShip.getPositionX(), (int) enemySpaceShip.getPositionY());
-                explosions.add(explosion);
-            }
-        });
-    }
-
-//
-//    /**
-//     * Méthode qui lance l'annimation d'explosion
-//     */
-//    private final Runnable mExplosion = new Runnable() {
-//        @Override
-//        public void run() {
-//            explosions = explosions.stream().map(explosion -> {
-//                explosion.getImageView()
-//                        .setImageBitmap(explosion.getExplosions()[explosion.getExplosionFrame()]);
-//                explosion.setExplosionFrame(explosion.getExplosionFrame() + 1);
-//                return explosion;
-//            }).filter(explosion -> explosion.getExplosionFrame() < 9).collect(Collectors.toList());
-//            if()
-//            handler.postDelayed(mExplosion, 60);
-//        }
-//    };
-
-
 
     /**
      * Add score the the player and refresh the TextView
