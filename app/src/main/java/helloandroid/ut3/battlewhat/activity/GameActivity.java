@@ -19,17 +19,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.Iterator;
 import java.util.function.Supplier;
 
 import helloandroid.ut3.battlewhat.R;
 import helloandroid.ut3.battlewhat.gameUtils.Score;
+import helloandroid.ut3.battlewhat.object.ExplosionAnimation;
 import sensors.AcceleroMeterSensor;
 import sensors.LightSensor;
 import sensors.OnLightChangeListener;
 import sensors.OnShakeListener;
-import helloandroid.ut3.battlewhat.object.Explosion;
 import helloandroid.ut3.battlewhat.object.Shot;
 import helloandroid.ut3.battlewhat.object.spaceship.EnemySpaceShip;
 import helloandroid.ut3.battlewhat.object.spaceship.PlayerSpaceShip;
@@ -37,11 +36,12 @@ import helloandroid.ut3.battlewhat.object.spaceship.PlayerSpaceShip;
 public class GameActivity extends AppCompatActivity implements View.OnTouchListener, OnShakeListener, OnLightChangeListener {
 
     // PARAMETERS FOR THE GAMEPLAY
-    private final int SHOOT_PLAYER_SPEED = 1000;
-    private final int SHOOT_ENEMY_SPEED = 1000;
+    private final int SHOOT_PLAYER_SPEED = 1000; // Define the speed of shooting for the player
+    private final int SHOOT_ENEMY_SPEED = 1000; // Define the speed of shooting for the enemy
     private final int SHOOT_PLAYER_MOVE_SPEED = 10;
     private final int SHOOT_ENEMY_MOVE_SPEED = 10;
     private final int TIME_NEEDED_FOR_BONUS = 10000;
+    private final int MAX_X_SHOOT_POSITION = 1000; // Define a maximum X position beyond which shots are considered to have gone too far
 
 
     private int lightLevel=1;
@@ -61,7 +61,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private PlayerSpaceShip playerSpaceShip;
     private EnemySpaceShip enemySpaceShip;
     private ArrayList<Shot> enemyShots, playerShots;
-    private ArrayList<Explosion> explosions;
+    private ArrayList<ExplosionAnimation> explosions;
 
     private boolean isRunning;
 
@@ -130,9 +130,6 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         enemyPosition= gameContent_height;
         enemySpaceShip.setPositionY(1667);
 
-        mHandler = new Handler();
-        mHandler.postDelayed(mUpdate, 20);
-
         isRunning = false;
         shakePointsView = findViewById(R.id.shakePointsText);
         shakePointsView.setVisibility(View.INVISIBLE);
@@ -142,7 +139,8 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
 
         // Start the game
         start();
-
+        mHandler = new Handler();
+        mHandler.postDelayed(mUpdate, 20);
         gameView.setOnTouchListener(this);
         this.sharedPref =this.getApplicationContext().
                 getSharedPreferences("switchSensor",
@@ -180,20 +178,49 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         }
     };
 
+    private void checkCollisionShoot() {
+        // Check collision player shoot
+        playerShots.forEach(shoot -> {
+            if (Rect.intersects(shoot.getCollisionShape(),
+                    enemySpaceShip.getCollisionShape()) && !shoot.isHit) {
+                shoot.isHit = true;
+                gameView.removeView(shoot.getImageView());
+                incrementGameScore(shakePoints>=40 ?2 : 1);
+                ExplosionAnimation explosionAnimation = new ExplosionAnimation(context);
+                explosions.add(explosionAnimation);
+                explosionAnimation.makeAnimation(context, gameView, enemySpaceShip);
+            }
+        });
+        enemyShots.forEach(shoot -> {
+            if (Rect.intersects(shoot.getCollisionShape(),
+                    playerSpaceShip.getCollisionShape()) && !shoot.isHit) {
+                shoot.isHit = true;
+                counterTimeToGetBonus =0;
+                bonusMessage.setVisibility(View.INVISIBLE);
+                gameView.removeView(shoot.getImageView());
+                ExplosionAnimation explosionAnimation = new ExplosionAnimation(context);
+                explosions.add(explosionAnimation);
+                explosionAnimation.makeAnimation(context, gameView, playerSpaceShip);
+                playerSpaceShip.makeAnimationHit();
+            }
+        });
+    }
+
     private void updateExplosion() {
         for(int i = 0; i < explosions.size(); i++) {
-            Explosion explosion = explosions.get(i);
-            if(explosion.changeBitmapUntilFinish(context)) {
-                explosions.remove(explosion);
+            if(explosions.get(i).isFinish()) {
+                gameView.removeView(explosions.get(i).getExplosionImageView());
+                explosions.remove(explosions.get(i));
             }
         }
     }
-
-
     private final Runnable mPlayerBulletControl = new Runnable() {
         @Override
         public void run() {
-            newPlayerBullet();
+            // If player hit, it can't shoot
+            if(!playerSpaceShip.isHit()) {
+                newPlayerBullet();
+            }
             // Prepare the next shoot
             handler.postDelayed(mPlayerBulletControl, lightLevel==0 || lightLevel==2 ? (long)
                     (SHOOT_PLAYER_SPEED * 0.7)
@@ -212,8 +239,8 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
 
     public void newPlayerBullet() {
         Shot shot = new Shot(context,
-                (int) (playerSpaceShip.getPositionX() - playerSpaceShip.getOurSpaceshipWidth()/2),
-                (int) playerSpaceShip.getPositionY() - playerSpaceShip.getOurSpaceshipHeight() / 4,
+                (int) (playerSpaceShip.getPositionX() - playerSpaceShip.getWidth()/2),
+                (int) playerSpaceShip.getPositionY() - playerSpaceShip.getHeight() / 4,
                  shakePoints >=40 ?R.drawable.shoot_god :R.drawable.shoot_blue);
         shot.getImageView().setScaleX(-1);
         gameView.addView(shot.getImageView());
@@ -230,23 +257,28 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     }
 
     public void updatePostitionShoot() {
-
-        for(Shot shot: playerShots) {
+        for (Iterator<Shot> iterator = playerShots.iterator(); iterator.hasNext();) {
+            Shot shot = iterator.next();
             shot.setPositionX(shot.getPositionX() - SHOOT_PLAYER_MOVE_SPEED);
+
+            if (shot.getPositionX() < -MAX_X_SHOOT_POSITION) {
+                gameView.removeView(shot.getImageView());
+                // If the shot has gone too far to the left, remove it from the list
+                iterator.remove();
+            }
         }
-        for(Shot shot: enemyShots) {
+
+        for (Iterator<Shot> iterator = enemyShots.iterator(); iterator.hasNext();) {
+            Shot shot = iterator.next();
             shot.setPositionX(shot.getPositionX() + SHOOT_ENEMY_MOVE_SPEED);
+
+            if (shot.getPositionX() > MAX_X_SHOOT_POSITION) {
+                gameView.removeView(shot.getImageView());
+                // If the shot has gone too far to the right, remove it from the list
+                iterator.remove();
+            }
         }
     }
-
-//    /**
-//     * un Runnable qui sera appelé par le timer pour la gestion du mouvement du player
-//     */
-//    private void updatePlayerPositionTime() {
-//        // mettre à jour la position du joueur
-//        mHandler.postDelayed(this, 20);
-//        updatePosition(vitessePlayer);
-//    }
 
     // TODO Adapter le code par rapport à l'écran
     /**
@@ -267,51 +299,6 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             }
             enemySpaceShip.setPositionY(enemyPosition);
     }
-
-    private void checkCollisionShoot() {
-        // Check collision player shoot
-        playerShots.forEach(shoot -> {
-            if (Rect.intersects(shoot.getCollisionShape(),
-                    enemySpaceShip.getCollisionShape()) && !shoot.isHit) {
-                shoot.isHit = true;
-                gameView.removeView(shoot.getImageView());
-                incrementGameScore(shakePoints>=40 ?2 : 1);
-                Explosion explosion = new Explosion(context, (int) enemySpaceShip.getPositionX(), (int) enemySpaceShip.getPositionY());
-                explosions.add(explosion);
-            }
-        });
-        enemyShots.forEach(shoot -> {
-            if (Rect.intersects(shoot.getCollisionShape(),
-                    playerSpaceShip.getCollisionShape()) && !shoot.isHit) {
-                shoot.isHit = true;
-                counterTimeToGetBonus =0;
-                bonusMessage.setVisibility(View.INVISIBLE);
-                gameView.removeView(shoot.getImageView());
-                Explosion explosion = new Explosion(context, (int) enemySpaceShip.getPositionX(), (int) enemySpaceShip.getPositionY());
-                explosions.add(explosion);
-            }
-        });
-    }
-
-//
-//    /**
-//     * Méthode qui lance l'annimation d'explosion
-//     */
-//    private final Runnable mExplosion = new Runnable() {
-//        @Override
-//        public void run() {
-//            explosions = explosions.stream().map(explosion -> {
-//                explosion.getImageView()
-//                        .setImageBitmap(explosion.getExplosions()[explosion.getExplosionFrame()]);
-//                explosion.setExplosionFrame(explosion.getExplosionFrame() + 1);
-//                return explosion;
-//            }).filter(explosion -> explosion.getExplosionFrame() < 9).collect(Collectors.toList());
-//            if()
-//            handler.postDelayed(mExplosion, 60);
-//        }
-//    };
-
-
 
     /**
      * Add score the the player and refresh the TextView

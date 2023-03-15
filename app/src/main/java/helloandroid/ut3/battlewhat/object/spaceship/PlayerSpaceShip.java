@@ -1,77 +1,64 @@
 package helloandroid.ut3.battlewhat.object.spaceship;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
-import android.view.View;
+import android.os.Handler;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 
-import java.util.ArrayList;
-import java.util.Random;
-
 import helloandroid.ut3.battlewhat.R;
-import helloandroid.ut3.battlewhat.activity.GameActivity;
-import helloandroid.ut3.battlewhat.object.Shot;
 
-public class PlayerSpaceShip {
-    Context context;
-    Bitmap spaceship;
-    ImageView spaceShipView;
-    Random random;
+public class PlayerSpaceShip extends SpaceShip {
 
-    public ArrayList<Shot> playerShots;
+    private final Animation animationHit;
+    private final Handler handler;
+    private final int REPEAT_ANIMATION = 3;
+    private final int SPEED_ANIMATION = 3;
+    private boolean isHit;
+
 
     public PlayerSpaceShip(Context context, ImageView spaceShipView) {
-        this.context = context;
-        this.spaceShipView = spaceShipView;
+        super(context, spaceShipView);
         spaceship = BitmapFactory.decodeResource(context.getResources(), R.drawable.player);
-    }
-
-    public float getPositionX() {
-        return this.spaceShipView.getX();
-    }
-
-    public float getPositionY() {
-        return this.spaceShipView.getY();
-    }
-
-    public void setPositionX(float x) {
-        this.spaceShipView.setX(x);
+        animationHit = new AlphaAnimation((float) 0.8, 0);
+        animationHit.setDuration(SPEED_ANIMATION);
+        animationHit.setInterpolator(new LinearInterpolator());
+        animationHit.setRepeatCount(REPEAT_ANIMATION);
+        handler = new Handler();
     }
 
     public void putGodMode() {
         spaceship = BitmapFactory.decodeResource(context.getResources(), R.drawable.enemy1);
     }
 
-    public void setPositionY(float y) {
-        this.spaceShipView.setY(y);
-    }
-
-    public Bitmap getSpaceship(){
-        return spaceship;
-    }
-
-    public int getOurSpaceshipWidth(){
-        return spaceship.getWidth();
-    }
-
-    public int getOurSpaceshipHeight(){
-        return spaceship.getHeight();
-    }
-
-    public int getWidth(){
-        return spaceship.getWidth();
-    }
-
-    public int getHeight(){
-        return spaceship.getHeight();
-    }
     public Rect getCollisionShape () {
         return new Rect(
                 (int) getPositionX(),
                 (int) getPositionY(),
                 (int) (getPositionX() + getWidth()),
                 (int) (getPositionY() + getHeight()));
+    }
+
+    public void makeAnimationHit() {
+        if(!isHit) {
+            spaceShipView.startAnimation(animationHit);
+            System.out.println(animationHit.getDuration());
+            handler.postDelayed(mWaitingAnimationEnd, SPEED_ANIMATION * REPEAT_ANIMATION);
+            isHit = true;
+        }
+    }
+
+    private final Runnable mWaitingAnimationEnd = new Runnable() {
+        @Override
+        public void run() {
+            isHit = false;
+        }
+    };
+
+    public boolean isHit() {
+        return isHit;
     }
 }

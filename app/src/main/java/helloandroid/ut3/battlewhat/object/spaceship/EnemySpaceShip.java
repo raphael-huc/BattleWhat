@@ -13,46 +13,11 @@ import helloandroid.ut3.battlewhat.R;
 import helloandroid.ut3.battlewhat.activity.GameActivity;
 import helloandroid.ut3.battlewhat.object.Shot;
 
-public class EnemySpaceShip {
-    Context context;
-    Bitmap spaceship;
-    View spaceShipView;
-    Random random;
-
-    public ArrayList<Shot> enemyShots;
+public class EnemySpaceShip extends SpaceShip {
 
     public EnemySpaceShip(Context context, View spaceShipView) {
-        this.context = context;
-        this.spaceShipView = spaceShipView;
+        super(context, spaceShipView);
         spaceship = BitmapFactory.decodeResource(context.getResources(), R.drawable.enemy1);
-    }
-
-    public float getPositionX() {
-        return this.spaceShipView.getX();
-    }
-
-    public float getPositionY() {
-        return this.spaceShipView.getY();
-    }
-
-    public void setPositionX(float x) {
-        this.spaceShipView.setX(x);
-    }
-
-    public void setPositionY(float y) {
-        this.spaceShipView.setY(y);
-    }
-
-    public Bitmap getSpaceship(){
-        return spaceship;
-    }
-
-    public int getWidth(){
-        return spaceship.getWidth();
-    }
-
-    public int getHeight(){
-        return spaceship.getHeight();
     }
 
     public Rect getCollisionShape () {
