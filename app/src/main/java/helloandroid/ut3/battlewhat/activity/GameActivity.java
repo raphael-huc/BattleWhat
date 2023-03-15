@@ -19,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -37,11 +38,12 @@ import helloandroid.ut3.battlewhat.object.spaceship.PlayerSpaceShip;
 public class GameActivity extends AppCompatActivity implements View.OnTouchListener, OnShakeListener, OnLightChangeListener {
 
     // PARAMETERS FOR THE GAMEPLAY
-    private final int SHOOT_PLAYER_SPEED = 1000;
-    private final int SHOOT_ENEMY_SPEED = 1000;
+    private final int SHOOT_PLAYER_SPEED = 1000; // Define the speed of shooting for the player
+    private final int SHOOT_ENEMY_SPEED = 1000; // Define the speed of shooting for the enemy
     private final int SHOOT_PLAYER_MOVE_SPEED = 10;
     private final int SHOOT_ENEMY_MOVE_SPEED = 10;
     private final int TIME_NEEDED_FOR_BONUS = 10000;
+    private final int MAX_X_SHOOT_POSITION = 1000; // Define a maximum X position beyond which shots are considered to have gone too far
 
 
     private int lightLevel=1;
@@ -130,9 +132,6 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         enemyPosition= gameContent_height;
         enemySpaceShip.setPositionY(1667);
 
-        mHandler = new Handler();
-        mHandler.postDelayed(mUpdate, 20);
-
         isRunning = false;
         shakePointsView = findViewById(R.id.shakePointsText);
         shakePointsView.setVisibility(View.INVISIBLE);
@@ -142,7 +141,8 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
 
         // Start the game
         start();
-
+        mHandler = new Handler();
+        mHandler.postDelayed(mUpdate, 20);
         gameView.setOnTouchListener(this);
         this.sharedPref =this.getApplicationContext().
                 getSharedPreferences("switchSensor",
@@ -230,12 +230,26 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     }
 
     public void updatePostitionShoot() {
-
-        for(Shot shot: playerShots) {
+        for (Iterator<Shot> iterator = playerShots.iterator(); iterator.hasNext();) {
+            Shot shot = iterator.next();
             shot.setPositionX(shot.getPositionX() - SHOOT_PLAYER_MOVE_SPEED);
+
+            if (shot.getPositionX() < -MAX_X_SHOOT_POSITION) {
+                gameView.removeView(shot.getImageView());
+                // If the shot has gone too far to the left, remove it from the list
+                iterator.remove();
+            }
         }
-        for(Shot shot: enemyShots) {
+
+        for (Iterator<Shot> iterator = enemyShots.iterator(); iterator.hasNext();) {
+            Shot shot = iterator.next();
             shot.setPositionX(shot.getPositionX() + SHOOT_ENEMY_MOVE_SPEED);
+
+            if (shot.getPositionX() > MAX_X_SHOOT_POSITION) {
+                gameView.removeView(shot.getImageView());
+                // If the shot has gone too far to the right, remove it from the list
+                iterator.remove();
+            }
         }
     }
 
