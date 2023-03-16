@@ -6,14 +6,17 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.widget.Chronometer;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -21,6 +24,7 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import helloandroid.ut3.battlewhat.R;
@@ -50,7 +54,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private TextView shakePointsView;
     private TextView bonusMessage;
     private int counterTimeToGetBonus;
-    private Supplier<Integer> updateBonusTimerFunctional= ()-> {return -1;};
+    private Supplier<Integer> updateBonusTimerFunctional= ()-> -1;
 
     private Handler handler;
     private Context context;
@@ -96,6 +100,9 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
         context = this;
         handler = new Handler();
         playerShots = new ArrayList<>();
@@ -110,10 +117,6 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         playerSpaceShip = new PlayerSpaceShip(context, findViewById(R.id.player));
         enemySpaceShip = new EnemySpaceShip(context, findViewById(R.id.enemy));
         timer = findViewById(R.id.timer);
-
-        // init the player shoot
-        handler.postDelayed(mPlayerBulletControl, SHOOT_PLAYER_SPEED);
-        handler.postDelayed(mEnemyBulletControl, SHOOT_ENEMY_SPEED);
 
         //get size of layout gameView
         ViewTreeObserver vto = gameView.getViewTreeObserver();
@@ -320,6 +323,11 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
      * Start the game
      */
     public void start() {
+
+        // init the player shoot
+        handler.postDelayed(mPlayerBulletControl, SHOOT_PLAYER_SPEED);
+        handler.postDelayed(mEnemyBulletControl, SHOOT_ENEMY_SPEED);
+
         if(!isRunning || timer.isCountDown()) {
             timer.start();
             isRunning = true;
@@ -424,7 +432,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     /**
      * un Runnable qui sera appelé par le timer pour la gestion du mouvement du player
      */
-    private Runnable mUpdatePlayerPositionTime = new Runnable() {
+    private final Runnable mUpdatePlayerPositionTime = new Runnable() {
         public void run() {
             // mettre à jour la position du joueur
             mHandler.postDelayed(this, 20);
@@ -436,12 +444,9 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private void startUpdatePlayerPositionTimeWithDuration(int speed, long duration) {
         vitessePlayer = speed; // modifier la valeur de vitessePlayer
         mHandler.post(mUpdatePlayerPositionTime);
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                vitessePlayer = 0;
-                stopUpdatePlayerPositionTime();
-            }
+        mHandler.postDelayed(() -> {
+            vitessePlayer = 0;
+            stopUpdatePlayerPositionTime();
         }, duration);
     }
 

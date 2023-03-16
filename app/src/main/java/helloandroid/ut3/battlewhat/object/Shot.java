@@ -59,14 +59,15 @@ public class Shot {
         return shot.getHeight();
     }
 
-    public Rect getCollisionShape () {
-        int centerX = (int) (getPositionX() + getWidth() / 2) + RESHAPE_X_COLLISION;
+    // Put the collision shape in front of the shot
+    public Rect getCollisionShape() {
+        int centerX = (int) getPositionX() + getWidth() / 2;
         int centerY = (int) (getPositionY() + getHeight() / 2);
 
         return new Rect(
-                (int) centerX,
-                (int) centerY,
-                (int) (centerX + 1),
-                (int) (centerY) + 1);
+                centerX,
+                centerY,
+                (centerX + 1),
+                (centerY) + 1);
     }
 }
