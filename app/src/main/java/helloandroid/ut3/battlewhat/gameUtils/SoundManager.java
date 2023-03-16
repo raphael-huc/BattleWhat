@@ -103,10 +103,14 @@ public class SoundManager {
 
     public final void cleanUpSound() {
         soundLoaded = null;
-        soundPool.release();
-        soundPool = null;
-        mediaPlayer.stop();
-        mediaPlayer = null;
+        if(soundPool != null) {
+            soundPool.release();
+            soundPool = null;
+        }
+        if(mediaPlayer != null) {
+            mediaPlayer.stop();
+            mediaPlayer = null;
+        }
     }
 
 }
