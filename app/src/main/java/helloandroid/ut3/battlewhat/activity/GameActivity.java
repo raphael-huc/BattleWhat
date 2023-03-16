@@ -6,13 +6,11 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
-import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -23,12 +21,14 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Objects;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import helloandroid.ut3.battlewhat.R;
 import helloandroid.ut3.battlewhat.gameUtils.Score;
+import helloandroid.ut3.battlewhat.gameUtils.SoundManager;
 import helloandroid.ut3.battlewhat.object.ExplosionAnimation;
 import sensors.AcceleroMeterSensor;
 import sensors.LightSensor;
@@ -48,7 +48,6 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private final int TIME_NEEDED_FOR_BONUS = 10000;
     private final int MAX_X_SHOOT_POSITION = 1000; // Define a maximum X position beyond which shots are considered to have gone too far
 
-
     private int lightLevel=1;
     private int shakePoints=0;
     private TextView shakePointsView;
@@ -62,6 +61,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private Chronometer timer;
 
     private Score score;
+    private SoundManager soundManager;
     private TextView scoreInput;
     private PlayerSpaceShip playerSpaceShip;
     private EnemySpaceShip enemySpaceShip;
@@ -92,10 +92,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private static final int SWIPE_THRESHOLD = 100;
 
     private SharedPreferences sharedPref;
-
     private int totalPartiesJouees;
-
-    //private SharedPreferences sharedPreferencesHistorical;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,6 +110,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         gameView = findViewById(R.id.Game);
         score = new Score();
         scoreInput = findViewById(R.id.textScore);
+        soundManager = new SoundManager(context);
 
         playerSpaceShip = new PlayerSpaceShip(context, findViewById(R.id.player));
         enemySpaceShip = new EnemySpaceShip(context, findViewById(R.id.enemy));
@@ -147,6 +145,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
 
         // Start the game
         start();
+
         mHandler = new Handler();
         mHandler.postDelayed(mUpdate, 20);
         gameView.setOnTouchListener(this);
@@ -169,8 +168,6 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         if(sharedPref.getBoolean("lightSensor",true)) {
             lightSensor = new LightSensor(this, this);
         }
-
-        //this.sharedPreferencesHistorical = this.getApplicationContext().getSharedPreferences("Historical", MODE_PRIVATE);
     }
 
     /**
@@ -198,6 +195,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
                 incrementGameScore(shakePoints>=40 ?2 : 1);
                 ExplosionAnimation explosionAnimation = new ExplosionAnimation(context);
                 explosions.add(explosionAnimation);
+                soundManager.playEnemyHit();
                 explosionAnimation.makeAnimation(context, gameView, enemySpaceShip);
             }
         });
@@ -210,6 +208,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
                 gameView.removeView(shoot.getImageView());
                 ExplosionAnimation explosionAnimation = new ExplosionAnimation(context);
                 explosions.add(explosionAnimation);
+                soundManager.playPlayerHit();
                 explosionAnimation.makeAnimation(context, gameView, playerSpaceShip);
                 playerSpaceShip.makeAnimationHit();
             }
@@ -254,6 +253,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
                  shakePoints >=40 ?R.drawable.shoot_god :R.drawable.shoot_blue);
         shot.getImageView().setScaleX(-1);
         gameView.addView(shot.getImageView());
+        soundManager.playSoundLaserPlayer(playerSpaceShip.isGodMod());
         playerShots.add(shot);
     }
 
@@ -264,6 +264,8 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
                 R.drawable.shoot_red);
         gameView.addView(shot.getImageView());
         enemyShots.add(shot);
+
+        soundManager.playSoundLaserEnemy();
     }
 
     public void updatePostitionShoot() {
@@ -290,7 +292,6 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         }
     }
 
-    // TODO Adapter le code par rapport à l'écran
     /**
      * un Runnable qui sera appelé par le timer pour la gestion du mouvement de l'enemy
      */
@@ -332,6 +333,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             timer.start();
             isRunning = true;
         }
+        soundManager.playMusic();
     }
 
     /**
@@ -476,6 +478,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
 
         if(counterTimeToGetBonus >TIME_NEEDED_FOR_BONUS){
             incrementGameScore((counterTimeToGetBonus /1000));
+            soundManager.playPowerUp();
             counterTimeToGetBonus =0;
             bonusMessage.setVisibility(View.INVISIBLE);
         }
@@ -490,6 +493,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             shakePointsView.setVisibility(View.INVISIBLE);
             ImageView v= findViewById(R.id.player);
             v.setImageResource(R.drawable.godmode);
+            soundManager.playPowerUpGod();
             playerSpaceShip.putGodMode();
             shakePoints=41;
         }
@@ -517,6 +521,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     protected void onStop() {
         super.onStop();
+        soundManager.cleanUpSound();
         if(acceleroMeterSensor!=null) {
             acceleroMeterSensor.onStop();
         }
@@ -542,6 +547,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     protected void onResume() {
         super.onResume();
+        soundManager.playMusic();
         if(acceleroMeterSensor!=null) {
             acceleroMeterSensor.onResume();
         }
@@ -554,6 +560,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     protected void onPause() {
         super.onPause();
+        soundManager.pauseMusic();
         if(acceleroMeterSensor!=null) {
             acceleroMeterSensor.onPause();
         }
