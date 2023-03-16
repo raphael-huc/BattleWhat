@@ -51,6 +51,10 @@ public class SoundManager {
     }
 
     public void playMusic() {
+        if(mediaPlayer == null) {
+            mediaPlayer = MediaPlayer.create(context, R.raw.music);
+            mediaPlayer.setVolume(0.5f, 0.5f);
+        }
         mediaPlayer.setLooping(true);
         mediaPlayer.start();
     }
