@@ -55,16 +55,26 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private Supplier<Integer> updateBonusTimerFunctional= ()-> {return -1;};
     private Consumer<Integer> updatePositionEnemy =
             (newPositionAdder)-> {
-            if(this.mvtEnemy) {
+            boolean canToR=checkIfIcanMoveToTheRight();
+            boolean canToL=checkIfIcanMoveToTheLeft();
+
+            if(canToL == false && !this.mvtEnemy || canToR==false && this.mvtEnemy){
+                ImageView v= findViewById(R.id.enemy);
+                v.setVisibility(View.INVISIBLE);
+                this.enemySpaceShip.setInvisibleEnemy(2000);
+            }
+            if(this.mvtEnemy ) {
+
                 if (newPositionAdder+this.enemyPosition >= this.gameContent_height - 110) {
                     this.mvtEnemy = false;
+
                     this.enemyPosition -= newPositionAdder;
                 }
                 else{
                     this.enemyPosition += newPositionAdder;
                 }
             }
-            else{
+            else {
                 if (newPositionAdder+this.enemyPosition <= 0) {
                     mvtEnemy = true;
                     this.enemyPosition -= newPositionAdder;
@@ -73,6 +83,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
                     this.enemyPosition += newPositionAdder;
                 }
             }
+
         };
 
     private Handler handler;
@@ -239,6 +250,11 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             }
         });
         enemySpaceShip.reduceNoNewActionUntil(20);
+        enemySpaceShip.reduceInvisibleEnemy(20);
+        if(enemySpaceShip.getInvisibleEnemy()<=0){
+            ImageView v= findViewById(R.id.enemy);
+            v.setVisibility(View.VISIBLE);
+        }
     }
 
     private void updateExplosion() {
@@ -314,6 +330,20 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             }
         }
     }
+
+    private boolean checkIfIcanMoveToTheLeft() {
+        // Check collision player shoot
+
+        return !playerShots.stream().anyMatch(shoot->(Rect.intersects(shoot.getCollisionShape(),
+                        enemySpaceShip.getPredictLeftShape()) && !shoot.isHit) );
+
+    }
+    private boolean checkIfIcanMoveToTheRight() {
+        // Check collision player shoot
+        return !playerShots.stream().anyMatch(shoot->(Rect.intersects(shoot.getCollisionShape(),
+                enemySpaceShip.getPredictRightShape()) && !shoot.isHit) );
+    }
+
 
     // TODO Adapter le code par rapport à l'écran
     /**
