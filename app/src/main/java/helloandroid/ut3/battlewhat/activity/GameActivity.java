@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
 import android.os.Build;
@@ -88,6 +89,10 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
 
     private SharedPreferences sharedPref;
 
+    private int totalPartiesJouees;
+
+    //private SharedPreferences sharedPreferencesHistorical;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -161,6 +166,8 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         if(sharedPref.getBoolean("lightSensor",true)) {
             lightSensor = new LightSensor(this, this);
         }
+
+        //this.sharedPreferencesHistorical = this.getApplicationContext().getSharedPreferences("Historical", MODE_PRIVATE);
     }
 
     /**
@@ -333,12 +340,40 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
      * Exit screen of game
      */
     public void exitGame(View view) {
-        //Intent intent = new Intent(this, MainMenuActivity.class);
-        stop();
+        svgAndClose();
+    }
 
+    /**
+     * Exit screen of game
+     */
+    public void svgAndClose() {
+        stop();
         //enregistrer les valeurs
-        //startActivity(intent);
-        System.exit(RESULT_OK);
+        // Creating a shared pref object with a file name "Historical" in private mode
+        SharedPreferences sharedPreferencesHistorical = getSharedPreferences("Historical", MODE_PRIVATE);
+        SharedPreferences.Editor historicalEdit = sharedPreferencesHistorical.edit();
+
+        // Récupérer le nombre total de parties jouées
+        totalPartiesJouees = sharedPreferencesHistorical.getInt("lastNbPartie", 0);
+        // Incrémenter le nombre total de parties jouées
+        totalPartiesJouees++;
+
+        // write all the data in SharedPreference and apply
+        historicalEdit.putInt("lastScore", score.getScorePoint());
+        historicalEdit.putString("lastTime", timer.getText().toString());
+        //historicalEdit.putString("lastTime", "01:20");
+        historicalEdit.putInt("lastNbPartie", totalPartiesJouees);
+        historicalEdit.apply();
+
+        finish();
+    }
+
+    /**
+     * When we touche button return, close exit game
+     */
+    @Override
+    public void onBackPressed(){
+        svgAndClose();
     }
 
     /**
@@ -373,7 +408,9 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
             case (MotionEvent.ACTION_UP) :
                 long startTime = (Long) v.getTag(); // Récupère la valeur de startTime à partir de la propriété tag de la vue
                 long elapsedTime = SystemClock.elapsedRealtime() - startTime; // Calcule le temps écoulé
-                startUpdatePlayerPositionTimeWithDuration(4, elapsedTime);
+                if(elapsedTime > 100L){
+                    startUpdatePlayerPositionTimeWithDuration(4, elapsedTime);
+                }
                 return true;
             case (MotionEvent.ACTION_CANCEL) :
                 return true;
