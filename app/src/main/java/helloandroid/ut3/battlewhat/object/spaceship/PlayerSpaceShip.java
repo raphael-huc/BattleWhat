@@ -16,7 +16,7 @@ public class PlayerSpaceShip extends SpaceShip {
     private final Animation animationHit;
     private final Handler handler;
     private final int REPEAT_ANIMATION = 3;
-    private final int SPEED_ANIMATION = 3;
+    private final int SPEED_ANIMATION = 500;
     private boolean isHit;
 
 
@@ -45,7 +45,6 @@ public class PlayerSpaceShip extends SpaceShip {
     public void makeAnimationHit() {
         if(!isHit) {
             spaceShipView.startAnimation(animationHit);
-            System.out.println(animationHit.getDuration());
             handler.postDelayed(mWaitingAnimationEnd, SPEED_ANIMATION * REPEAT_ANIMATION);
             isHit = true;
         }

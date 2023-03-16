@@ -30,7 +30,7 @@ public class ExplosionAnimation extends AnimationDrawable {
     };
     private ImageView explosionImageView;
     private boolean isFinish = false;
-    private Handler handler;
+    private final Handler handler;
 
     public ImageView getExplosionImageView() {
         return explosionImageView;
@@ -49,23 +49,18 @@ public class ExplosionAnimation extends AnimationDrawable {
     public void makeAnimation(Context context, ConstraintLayout gameView, SpaceShip spaceShip) {
         ExplosionAnimation explosionAnimation = new ExplosionAnimation(context);
         explosionImageView = new ImageView(context);
-        explosionImageView.setLayoutParams(new FrameLayout.LayoutParams(200, 200));
+        explosionImageView.setLayoutParams(new FrameLayout.LayoutParams(100, 100));
         // Make explosion position a little random
         Random random = new Random();
-        explosionImageView.setX(spaceShip.getPositionX() + random.nextInt(spaceShip.getWidth()) - spaceShip.getWidth() / 2f);
-        explosionImageView.setY(spaceShip.getPositionY() + random.nextInt(spaceShip.getHeight()) - spaceShip.getHeight() / 2f - 20);
+        explosionImageView.setX(spaceShip.getPositionX() + random.nextInt(spaceShip.getWidth() - 10) - spaceShip.getWidth() / 2f +10);
+        explosionImageView.setY(spaceShip.getPositionY() + random.nextInt(spaceShip.getHeight() - 10) - spaceShip.getHeight() / 2f - 10);
         gameView.addView(explosionImageView);
         explosionImageView.setBackground(explosionAnimation);
         explosionAnimation.start();
         handler.postDelayed(mWaitingAnimationEnd, (long) explosionAnimation.getNumberOfFrames() * FRAME_DURATION);
     }
 
-    private final Runnable mWaitingAnimationEnd = new Runnable() {
-        @Override
-        public void run() {
-            isFinish = true;
-        }
-    };
+    private final Runnable mWaitingAnimationEnd = () -> isFinish = true;
 
     public boolean isFinish() {
         return isFinish;
