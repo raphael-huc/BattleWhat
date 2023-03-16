@@ -18,6 +18,7 @@ public class PlayerSpaceShip extends SpaceShip {
     private final int REPEAT_ANIMATION = 3;
     private final int SPEED_ANIMATION = 500;
     private boolean isHit;
+    private boolean godMod = false;
 
 
     public PlayerSpaceShip(Context context, ImageView spaceShipView) {
@@ -32,6 +33,7 @@ public class PlayerSpaceShip extends SpaceShip {
 
     public void putGodMode() {
         spaceship = BitmapFactory.decodeResource(context.getResources(), R.drawable.enemy1);
+        godMod = true;
     }
 
     public Rect getCollisionShape () {
@@ -59,5 +61,9 @@ public class PlayerSpaceShip extends SpaceShip {
 
     public boolean isHit() {
         return isHit;
+    }
+
+    public boolean isGodMod() {
+        return godMod;
     }
 }
