@@ -23,7 +23,10 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
+
+
+import java.util.function.Consumer;
+
 import java.util.function.Supplier;
 
 import helloandroid.ut3.battlewhat.R;
@@ -54,7 +57,27 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
     private TextView bonusMessage;
     private int counterTimeToGetBonus;
     private Supplier<Integer> updateBonusTimerFunctional= ()-> -1;
-
+    private Consumer<Integer> updatePositionEnemy =
+            (newPositionAdder)-> {
+            if(this.mvtEnemy) {
+                if (newPositionAdder+this.enemyPosition >= this.gameContent_height - 110) {
+                    this.mvtEnemy = false;
+                    this.enemyPosition -= newPositionAdder;
+                }
+                else{
+                    this.enemyPosition += newPositionAdder;
+                }
+            }
+            else{
+                if (newPositionAdder+this.enemyPosition <= 0) {
+                    mvtEnemy = true;
+                    this.enemyPosition -= newPositionAdder;
+                }
+                else{
+                    this.enemyPosition += newPositionAdder;
+                }
+            }
+        };
     private Handler handler;
     private Context context;
     public ConstraintLayout gameView;
@@ -178,6 +201,7 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
         public void run() {
             updateEnemyPositionTime();
             updatePostitionShoot();
+            checkPredictCollisionShoot();
             checkCollisionShoot();
             updateExplosion();
             updateBonusTimerFunctional.get();
@@ -213,6 +237,16 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
                 playerSpaceShip.makeAnimationHit();
             }
         });
+    }
+    private void checkPredictCollisionShoot() {
+        // Check collision player shoot
+        playerShots.forEach(shoot -> {
+            if (Rect.intersects(shoot.getCollisionShape(),
+                    enemySpaceShip.getPredictCollisionShape()) && !shoot.isHit) {
+                enemySpaceShip.setYouNeedToAvoid(true);
+            }
+        });
+        enemySpaceShip.reduceNoNewActionUntil(20);
     }
 
     private void updateExplosion() {
@@ -296,14 +330,49 @@ public class GameActivity extends AppCompatActivity implements View.OnTouchListe
      * un Runnable qui sera appelé par le timer pour la gestion du mouvement de l'enemy
      */
     private void updateEnemyPositionTime() {
+
             if (mvtEnemy){
-                enemyPosition+=1;
+                if(enemySpaceShip.getNoNewActionUntil()<=0) {
+                    if(enemySpaceShip.getYouNeedToAvoid()) {
+                        if(enemySpaceShip.getDodgeNextMove()) {
+                            //enemyPosition += 100;
+                            updatePositionEnemy.accept(150);
+                            enemySpaceShip.setNoNewActionUntil(1000);
+                        }
+                        enemySpaceShip.setYouNeedToAvoid(false);
+                    }
+                    else{ // normal move
+                        //enemyPosition +=2;
+                        updatePositionEnemy.accept(3);
+                    }
+                }
+                else{// move if no action move available
+                    //enemyPosition += 1;
+                    updatePositionEnemy.accept(3);
+                }
                 if(enemyPosition >= gameContent_height - 110){
                     mvtEnemy = false;
                 }
             }
             if (!mvtEnemy) {
-                enemyPosition-=1;
+                if(enemySpaceShip.getNoNewActionUntil()<=0) {
+                    if(enemySpaceShip.getYouNeedToAvoid()) {
+                        if(enemySpaceShip.getDodgeNextMove()) {
+                            //enemyPosition -= 100;
+                            updatePositionEnemy.accept(-50);
+                            enemySpaceShip.setNoNewActionUntil(5000);
+                        }
+                        enemySpaceShip.setYouNeedToAvoid(false);
+                    }
+                    else{ // normal move
+                        //enemyPosition -=2;
+                        updatePositionEnemy.accept(-3);
+                    }
+                }
+                else{//move if no action move available
+                    //enemyPosition -= 1;
+                    updatePositionEnemy.accept(-3);
+                }
                 if (enemyPosition <= 0) {
                     mvtEnemy = true;
                 }
